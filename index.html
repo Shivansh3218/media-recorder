@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Screen Recorder</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #2c2c2c;
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+    
+    .container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    
+    .preview-container {
+      position: relative;
+      width: 100%;
+      height: 600px;
+      background: #1c1c1c;
+      border-radius: 8px;
+    }
+    
+    #screenPreview {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    
+    #webcamPreview {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      width: 240px;
+      height: 180px;
+      border-radius: 8px;
+      background: #333;
+    }
+    
+    .controls {
+      display: flex;
+      gap: 10px;
+    }
+    
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      background: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+    
+    button:hover {
+      background: #0056b3;
+    }
+    
+    .audio-extraction {
+      margin-top: 20px;
+      padding: 20px;
+      background: #1c1c1c;
+      border-radius: 8px;
+    }
+    
+    .file-input {
+      margin-bottom: 10px;
+    }
+    
+    .progress-bar {
+      width: 100%;
+      height: 20px;
+      background: #333;
+      border-radius: 10px;
+      overflow: hidden;
+      display: none;
+    }
+    
+    .progress {
+      width: 0%;
+      height: 100%;
+      background: #007bff;
+      transition: width 0.3s ease;
+    }
+
+    dialog {
+      border: none;
+      border-radius: 8px;
+      padding: 0;
+      background: white;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    dialog::backdrop {
+      background: rgba(0, 0, 0, 0.5);
+    }
+
+    #dialogScreenSource {
+      width: 100%;
+      padding: 8px;
+      margin: 10px 0;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="controls">
+      <button id="startBtn">Start Recording</button>
+      <button id="stopBtn" disabled>Stop Recording</button>
+    </div>
+    
+    <div class="preview-container">
+      <video id="screenPreview" autoplay></video>
+      <video id="webcamPreview" autoplay></video>
+    </div>
+  </div>
+
+  <div class="audio-extraction">
+    <h3>Audio Extraction</h3>
+    <div class="file-input">
+      <label for="videoFile">Select a video file:</label>
+      <input type="file" id="videoFile" accept="video/*" />
+    </div>
+    <button id="extractBtn">Extract Audio</button>
+    <div class="progress-bar" id="progressBar">
+      <div class="progress" id="progress"></div>
+    </div>
+  </div>
+  <script src="renderer.js"></script>
+</body>
+</html>
