@@ -10,10 +10,8 @@ let recordedChunks = [];
 
 async function startRecording() {
   try {
-    // First get the available sources when Start Recording is clicked
     const sources = await ipcRenderer.invoke('get-sources');
-    
-    // Create a modal/dialog for source selection
+
     const sourceDialog = document.createElement('dialog');
     sourceDialog.innerHTML = `
       <div style="padding: 20px; color: black;">
@@ -30,7 +28,6 @@ async function startRecording() {
     document.body.appendChild(sourceDialog);
     sourceDialog.showModal();
 
-    // Handle dialog buttons
     return new Promise((resolve, reject) => {
       sourceDialog.querySelector('#cancelBtn').onclick = () => {
         sourceDialog.close();
@@ -42,9 +39,9 @@ async function startRecording() {
         const selectedSource = sourceDialog.querySelector('#dialogScreenSource').value;
         sourceDialog.close();
         document.body.removeChild(sourceDialog);
-        
+
         try {
-          // Get screen stream
+          // Get screen stream with system audio
           const screenStream = await navigator.mediaDevices.getUserMedia({
             audio: {
               mandatory: {
@@ -59,22 +56,59 @@ async function startRecording() {
             }
           });
 
-          // Get webcam stream
+          // Get webcam stream with video and microphone
           const webcamStream = await navigator.mediaDevices.getUserMedia({
             video: true,
-            audio: true
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: false,
+              sampleRate: 44100
+            }
           });
 
+          // Set up preview streams (muted)
           screenPreview.srcObject = screenStream;
           webcamPreview.srcObject = webcamStream;
+          screenPreview.muted = true;
+          webcamPreview.muted = true;
 
-          // Combine both streams
-          const combinedStream = new MediaStream([
-            ...screenStream.getTracks(),
-            ...webcamStream.getTracks()
+          // Create an AudioContext for mixing
+          const audioContext = new AudioContext();
+
+          // Create sources for both audio streams
+          const micSource = audioContext.createMediaStreamSource(webcamStream);
+          const sysSource = audioContext.createMediaStreamSource(screenStream);
+
+          // Create a destination for the mixed audio
+          const dest = audioContext.createMediaStreamDestination();
+
+          // Create gain nodes for volume control
+          const micGain = audioContext.createGain();
+          const sysGain = audioContext.createGain();
+
+          // Set volumes
+          micGain.gain.value = 1.0;  // Microphone volume
+          sysGain.gain.value = 0.5;  // System audio volume
+
+          // Connect the audio graph
+          micSource.connect(micGain);
+          sysSource.connect(sysGain);
+          micGain.connect(dest);
+          sysGain.connect(dest);
+
+          // Combine all tracks for recording
+          const recordingStream = new MediaStream([
+            screenStream.getVideoTracks()[0], // Screen video
+            webcamStream.getVideoTracks()[0], // Webcam video
+            dest.stream.getAudioTracks()[0]   // Mixed audio
           ]);
 
-          mediaRecorder = new MediaRecorder(combinedStream);
+          mediaRecorder = new MediaRecorder(recordingStream, {
+            mimeType: 'video/webm;codecs=vp8,opus',
+            videoBitsPerSecond: 2500000,
+            audioBitsPerSecond: 128000
+          });
 
           mediaRecorder.ondataavailable = (e) => {
             if (e.data.size > 0) {
@@ -84,12 +118,13 @@ async function startRecording() {
 
           mediaRecorder.onstop = saveVideo;
 
-          mediaRecorder.start();
+          mediaRecorder.start(1000);
           startBtn.disabled = true;
           stopBtn.disabled = false;
           resolve();
         } catch (err) {
           reject(err);
+          console.error('Error in recording setup:', err);
         }
       };
     });
@@ -100,13 +135,25 @@ async function startRecording() {
 }
 
 function stopRecording() {
-  mediaRecorder.stop();
-  startBtn.disabled = false;
-  stopBtn.disabled = true;
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+
+    // Stop all tracks
+    if (screenPreview.srcObject) {
+      screenPreview.srcObject.getTracks().forEach(track => track.stop());
+    }
+    if (webcamPreview.srcObject) {
+      webcamPreview.srcObject.getTracks().forEach(track => track.stop());
+    }
+  }
 }
 
 function saveVideo() {
-  const blob = new Blob(recordedChunks, { type: 'video/webm' });
+  const blob = new Blob(recordedChunks, {
+    type: 'video/webm;codecs=vp8,opus'
+  });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.style.display = 'none';
@@ -114,8 +161,13 @@ function saveVideo() {
   a.download = `recording-${Date.now()}.webm`;
   document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(url);
-  document.body.removeChild(a);
+
+  // Cleanup
+  setTimeout(() => {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    recordedChunks = [];
+  }, 100);
 }
 
 // Audio extraction functionality
@@ -132,32 +184,23 @@ async function extractAudio() {
   }
 
   try {
-    // Create video element to load the file
     const video = document.createElement('video');
     const audioContext = new AudioContext();
-    let audioBuffer;
 
-    // Show progress bar
     progressBar.style.display = 'block';
     progress.style.width = '0%';
 
-    // Create object URL for the file
     const videoURL = URL.createObjectURL(file);
     video.src = videoURL;
 
-    // Wait for video metadata to load
     await new Promise((resolve) => {
       video.addEventListener('loadedmetadata', resolve);
     });
 
-    // Create media element source
     const mediaElement = audioContext.createMediaElementSource(video);
-
-    // Create destination node to capture audio
     const destination = audioContext.createMediaStreamDestination();
     mediaElement.connect(destination);
 
-    // Create MediaRecorder for audio
     const audioRecorder = new MediaRecorder(destination.stream);
     const audioChunks = [];
 
@@ -174,30 +217,31 @@ async function extractAudio() {
       a.href = audioUrl;
       a.download = `extracted-audio-${Date.now()}.wav`;
       a.click();
-      URL.revokeObjectURL(audioUrl);
-      URL.revokeObjectURL(videoURL);
-      progressBar.style.display = 'none';
+
+      // Cleanup
+      setTimeout(() => {
+        URL.revokeObjectURL(audioUrl);
+        URL.revokeObjectURL(videoURL);
+        video.remove();
+        progressBar.style.display = 'none';
+      }, 100);
     };
 
-    // Start recording and playing video
     audioRecorder.start();
     video.play();
 
-    // Update progress bar
     const updateProgress = () => {
       const progress = (video.currentTime / video.duration) * 100;
       document.getElementById('progress').style.width = `${progress}%`;
-      
+
       if (video.currentTime < video.duration) {
         requestAnimationFrame(updateProgress);
       }
     };
     updateProgress();
 
-    // Stop recording when video ends
     video.onended = () => {
       audioRecorder.stop();
-      video.remove();
     };
 
   } catch (error) {
@@ -207,8 +251,14 @@ async function extractAudio() {
   }
 }
 
-extractBtn.addEventListener('click', extractAudio);
-
-// Event listeners
+// Add event listeners
 startBtn.addEventListener('click', startRecording);
 stopBtn.addEventListener('click', stopRecording);
+extractBtn.addEventListener('click', extractAudio);
+
+// Handle page unload
+window.addEventListener('beforeunload', () => {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    stopRecording();
+  }
+});

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Screen Recorder - Video Editor Suite</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="../css/screen-recorder.css">
+    <!-- Add Inter font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Add Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button onclick="window.location.href='../index.html'" class="back-btn">
+                <i data-lucide="arrow-left"></i>
+                Back to Home
+            </button>
+            <h1>Screen & Webcam Recorder</h1>
+        </div>
+        
+        <div class="controls">
+            <button id="startBtn" class="control-btn primary-btn">
+                <i data-lucide="video"></i>
+                Start Recording
+            </button>
+            <button id="pauseBtn" class="control-btn secondary-btn" disabled>
+                <i data-lucide="pause"></i>
+                Pause Recording
+            </button>
+            <button id="switchSourceBtn" class="control-btn secondary-btn" disabled>
+                <i data-lucide="monitor"></i>
+                Switch Screen
+            </button>
+            <button id="stopBtn" class="control-btn danger-btn" disabled>
+                <i data-lucide="square"></i>
+                Stop Recording
+            </button>
+        </div>
+        
+        <div class="preview-container">
+            <video id="screenPreview" autoplay></video>
+            <video id="webcamPreview" autoplay></video>
+        </div>
+    </div>
+
+    <script src="../js/screen-recorder.js"></script>
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>

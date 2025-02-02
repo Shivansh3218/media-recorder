@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Extractor - Video Editor Suite</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="../css/audio-extractor.css">
+</head>
+<body>
+    <div class="container">
+        <button onclick="window.location.href='../index.html'" class="back-btn">Back to Home</button>
+        <h1>Audio Extractor</h1>
+        
+        <div class="extractor-container">
+            <div class="file-input">
+                <label for="videoFile">Select a video file:</label>
+                <input type="file" id="videoFile" accept="video/*" />
+            </div>
+            <button id="extractBtn">Extract Audio</button>
+            <div class="progress-bar" id="progressBar">
+                <div class="progress" id="progress"></div>
+            </div>
+        </div>
+    </div>
+    <script src="../js/audio-extractor.js"></script>
+</body>
+</html>
