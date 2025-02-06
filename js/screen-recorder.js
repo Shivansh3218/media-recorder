@@ -5,7 +5,6 @@ const stopBtn = document.getElementById('stopBtn');
 const pauseBtn = document.getElementById('pauseBtn');
 const switchBtn = document.getElementById('switchSourceBtn');
 const screenPreview = document.getElementById('screenPreview');
-const webcamPreview = document.getElementById('webcamPreview');
 
 let mediaRecorder;
 let recordedChunks = [];
@@ -14,23 +13,6 @@ let audioDestination;
 let currentScreenStream;
 let currentWebcamStream;
 let isPaused = false;
-
-// Initialize preview on page load
-initializePreview();
-
-async function initializePreview() {
-    try {
-        // Get webcam stream for preview
-        const webcamStream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: false
-        });
-        webcamPreview.srcObject = webcamStream;
-        webcamPreview.muted = true;
-    } catch (err) {
-        console.error('Error initializing preview:', err);
-    }
-}
 
 async function startRecording() {
     try {
@@ -54,7 +36,9 @@ function showSourceSelectionDialog(sources) {
             </select>
             <div class="dialog-footer">
                 <button id="cancelBtn" class="control-btn secondary-btn">Cancel</button>
-                <button id="confirmBtn" class="control-btn primary-btn">Start Recording</button>
+                <button id="confirmBtn" class="control-btn primary-btn">
+                    ${mediaRecorder ? 'Switch Source' : 'Start Recording'}
+                </button>
             </div>
         </div>
     `;
@@ -74,13 +58,93 @@ function setupDialogListeners(dialog) {
         const selectedSource = dialog.querySelector('#dialogScreenSource').value;
         dialog.close();
         document.body.removeChild(dialog);
-        await initializeRecording(selectedSource);
+
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            await switchSource(selectedSource);
+        } else {
+            await initializeRecording(selectedSource);
+        }
     };
+}
+
+async function switchSource(sourceId) {
+    try {
+        // Store current state
+        const wasRecording = mediaRecorder.state === 'recording';
+
+        // Get new screen stream
+        const newScreenStream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+                mandatory: {
+                    chromeMediaSource: 'desktop'
+                }
+            },
+            video: {
+                mandatory: {
+                    chromeMediaSource: 'desktop',
+                    chromeMediaSourceId: sourceId
+                }
+            }
+        });
+
+        // Pause recording if it was active
+        if (wasRecording) {
+            mediaRecorder.pause();
+        }
+
+        // Stop old screen stream tracks
+        if (currentScreenStream) {
+            currentScreenStream.getTracks().forEach(track => track.stop());
+        }
+
+        // Update current screen stream
+        currentScreenStream = newScreenStream;
+        screenPreview.srcObject = currentScreenStream;
+
+        // Update audio mixing
+        updateAudioMixing();
+
+        // Create new final stream and update media recorder
+        const finalStream = new MediaStream([
+            currentScreenStream.getVideoTracks()[0],
+            audioDestination.stream.getAudioTracks()[0]
+        ]);
+
+        const options = {
+            mimeType: 'video/webm;codecs=vp8,opus',
+            videoBitsPerSecond: 2500000,
+            audioBitsPerSecond: 128000
+        };
+
+        // Store chunks from previous recording
+        const previousChunks = recordedChunks;
+
+        // Create new media recorder
+        mediaRecorder = new MediaRecorder(finalStream, options);
+        mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) {
+                recordedChunks.push(e.data);
+            }
+        };
+        mediaRecorder.onstop = saveVideo;
+
+        // Combine old and new chunks
+        recordedChunks = previousChunks;
+
+        // Resume recording if it was active
+        if (wasRecording) {
+            mediaRecorder.start(1000);
+        }
+
+    } catch (err) {
+        console.error('Error switching source:', err);
+        alert('Error switching source: ' + err.message);
+    }
 }
 
 async function initializeRecording(sourceId) {
     try {
-        // Get screen stream with system audio
+        // Get screen stream
         currentScreenStream = await navigator.mediaDevices.getUserMedia({
             audio: {
                 mandatory: {
@@ -95,7 +159,7 @@ async function initializeRecording(sourceId) {
             }
         });
 
-        // Get webcam stream with audio
+        // Get webcam stream
         currentWebcamStream = await navigator.mediaDevices.getUserMedia({
             video: true,
             audio: {
@@ -105,20 +169,18 @@ async function initializeRecording(sourceId) {
             }
         });
 
-        // Set up preview streams
+        // Show floating webcam window
+        ipcRenderer.send('start-recording');
+
+        // Set up screen preview
         screenPreview.srcObject = currentScreenStream;
-        webcamPreview.srcObject = currentWebcamStream;
         screenPreview.muted = true;
-        webcamPreview.muted = true;
 
         // Initialize audio mixing
         setupAudioMixing();
 
-        // Create final stream
-        const finalStream = await createFinalStream();
-
         // Set up media recorder
-        setupMediaRecorder(finalStream);
+        setupMediaRecorder(currentScreenStream);
 
         // Update UI
         updateControlsState(true);
@@ -129,6 +191,10 @@ async function initializeRecording(sourceId) {
 }
 
 function setupAudioMixing() {
+    if (audioContext) {
+        audioContext.close();
+    }
+
     audioContext = new AudioContext();
     audioDestination = audioContext.createMediaStreamDestination();
 
@@ -145,64 +211,20 @@ function setupAudioMixing() {
     sysSource.connect(sysGain).connect(audioDestination);
 }
 
-async function createFinalStream() {
-    // Get the webcam video track
-    const webcamTrack = currentWebcamStream.getVideoTracks()[0];
-
-    // Create a canvas to flip the webcam video
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const videoElement = document.createElement('video');
-
-    // Set canvas size to match the webcam track settings
-    const { width, height } = webcamTrack.getSettings();
-    canvas.width = width;
-    canvas.height = height;
-
-    // Set up the video element
-    videoElement.srcObject = new MediaStream([webcamTrack]);
-    videoElement.muted = true;
-    await videoElement.play();
-
-    // Create a canvas stream for the mirrored webcam
-    const canvasStream = canvas.captureStream();
-    const mirroredTrack = canvasStream.getVideoTracks()[0];
-
-    // Draw mirrored video frames
-    function drawMirroredFrame() {
-        // Save the canvas state
-        ctx.save();
-
-        // Clear the canvas
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        // Flip the context horizontally
-        ctx.scale(-1, 1);
-        ctx.translate(-canvas.width, 0);
-
-        // Draw the video frame
-        ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-
-        // Restore the canvas state
-        ctx.restore();
-
-        // Schedule the next frame
-        requestAnimationFrame(drawMirroredFrame);
+function updateAudioMixing() {
+    if (audioContext) {
+        audioContext.close();
     }
-
-    // Start the mirroring process
-    drawMirroredFrame();
-
-    // Return the final stream with the mirrored webcam track
-    return new MediaStream([
-        currentScreenStream.getVideoTracks()[0],
-        mirroredTrack,
-        audioDestination.stream.getAudioTracks()[0]
-    ]);
+    setupAudioMixing();
 }
 
 function setupMediaRecorder(stream) {
-    mediaRecorder = new MediaRecorder(stream, {
+    const finalStream = new MediaStream([
+        stream.getVideoTracks()[0],
+        audioDestination.stream.getAudioTracks()[0]
+    ]);
+
+    mediaRecorder = new MediaRecorder(finalStream, {
         mimeType: 'video/webm;codecs=vp8,opus',
         videoBitsPerSecond: 2500000,
         audioBitsPerSecond: 128000
@@ -216,64 +238,6 @@ function setupMediaRecorder(stream) {
 
     mediaRecorder.onstop = saveVideo;
     mediaRecorder.start(1000);
-}
-
-async function switchSource() {
-    const sources = await ipcRenderer.invoke('get-sources');
-
-    const sourceDialog = document.createElement('dialog');
-    sourceDialog.innerHTML = `
-        <div class="dialog-content">
-            <div class="dialog-header">
-                <h3>Switch Screen Source</h3>
-            </div>
-            <select id="dialogScreenSource" class="source-select">
-                ${sources.map(source => `<option value="${source.id}">${source.name}</option>`).join('')}
-            </select>
-            <div class="dialog-footer">
-                <button id="cancelBtn" class="control-btn secondary-btn">Cancel</button>
-                <button id="confirmBtn" class="control-btn primary-btn">Switch</button>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(sourceDialog);
-    sourceDialog.showModal();
-
-    sourceDialog.querySelector('#cancelBtn').onclick = () => {
-        sourceDialog.close();
-        document.body.removeChild(sourceDialog);
-    };
-
-    sourceDialog.querySelector('#confirmBtn').onclick = async () => {
-        const selectedSource = sourceDialog.querySelector('#dialogScreenSource').value;
-        sourceDialog.close();
-        document.body.removeChild(sourceDialog);
-
-        // Stop current screen stream
-        currentScreenStream.getTracks().forEach(track => track.stop());
-
-        // Get new screen stream
-        currentScreenStream = await navigator.mediaDevices.getUserMedia({
-            audio: {
-                mandatory: {
-                    chromeMediaSource: 'desktop'
-                }
-            },
-            video: {
-                mandatory: {
-                    chromeMediaSource: 'desktop',
-                    chromeMediaSourceId: selectedSource
-                }
-            }
-        });
-
-        // Update preview
-        screenPreview.srcObject = currentScreenStream;
-
-        // Update recorder with new stream
-        const finalStream = createFinalStream();
-        setupMediaRecorder(finalStream);
-    };
 }
 
 function pauseRecording() {
@@ -311,8 +275,8 @@ function stopRecording() {
             audioContext = null;
         }
 
-        // Reinitialize preview
-        initializePreview();
+        // Close webcam window
+        ipcRenderer.send('stop-recording');
     }
 }
 
@@ -346,7 +310,7 @@ function saveVideo() {
 startBtn.addEventListener('click', startRecording);
 stopBtn.addEventListener('click', stopRecording);
 pauseBtn.addEventListener('click', pauseRecording);
-switchBtn.addEventListener('click', switchSource);
+switchBtn.addEventListener('click', startRecording); // This now handles switching properly
 
 // Handle page unload
 window.addEventListener('beforeunload', () => {
