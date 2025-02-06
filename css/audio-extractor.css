@@ -1,0 +1,173 @@
+/* Global styles */
+body {
+    background-color: #f5f7fa;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    color: #2d3748;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Back button styling */
+.back-btn {
+    background-color: #3182ce;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    margin-bottom: 1rem;
+}
+
+.back-btn:hover {
+    background-color: #2c5282;
+}
+
+h1 {
+    color: #1a365d;
+    font-size: 2.5rem;
+    text-align: center;
+    margin: 1.5rem 0;
+}
+
+.extractor-container {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease;
+    max-width: 500px;
+    margin: 2rem auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.extractor-container:hover {
+    transform: translateY(-2px);
+}
+
+/* File input styling */
+.file-input {
+    margin-bottom: 1.5rem;
+    width: 70%;
+    text-align: center;
+}
+
+.file-input label {
+    display: block;
+    margin-bottom: 1rem;
+    font-weight: 600;
+    color: #4a5568;
+    font-size: 1rem;
+    text-align: left;
+}
+
+.file-input input[type="file"] {
+    width: 100%;
+    padding: 2rem;
+    border: 2px dashed #cbd5e0;
+    border-radius: 8px;
+    background-color: #f7fafc;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.file-input input[type="file"]:hover {
+    border-color: #4299e1;
+    background-color: #ebf8ff;
+}
+
+/* Extract button styling */
+#extractBtn {
+    display: block;
+    width: 100%;
+    max-width: 300px;
+    padding: 0.875rem 2rem;
+    background-color: #3182ce;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin: 0.5rem auto;
+}
+
+#extractBtn:hover {
+    background-color: #2c5282;
+    transform: translateY(-1px);
+}
+
+#extractBtn:active {
+    transform: translateY(0);
+}
+
+#extractBtn:disabled {
+    background-color: #cbd5e0;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Progress bar styling */
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #edf2f7;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 1.5rem;
+    display: none;
+}
+
+.progress {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #3182ce, #4299e1);
+    transition: width 0.3s ease;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .extractor-container {
+        padding: 1.5rem;
+    }
+    
+    h1 {
+        font-size: 2rem;
+    }
+    
+    .file-input input[type="file"] {
+        padding: 1.5rem;
+    }
+    
+    #extractBtn {
+        padding: 0.875rem 1.5rem;
+    }
+}
+
+/* Additional enhancements */
+.file-input::before {
+    content: '📁';
+    position: absolute;
+    font-size: 1rem;
+    margin-left: -2rem;
+    opacity: 0.5;
+}
+
+/* Success state for progress */
+.progress.success {
+    background: linear-gradient(90deg, #48bb78, #68d391);
+}
+
+/* Error state for progress */
+.progress.error {
+    background: linear-gradient(90deg, #e53e3e, #fc8181);
+}

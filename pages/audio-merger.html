@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Merger - Video Editor Suite</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="../css/audio-merger.css">
+</head>
+<body>
+    <div class="container">
+        <button onclick="window.location.href='../index.html'" class="back-btn">Back to Home</button>
+        <h1>Audio Merger</h1>
+        
+        <div class="merger-container">
+            <div class="file-inputs">
+                <div class="file-input">
+                    <label for="videoFile">Select Video File:</label>
+                    <input type="file" id="videoFile" accept="video/*" />
+                </div>
+                <div class="file-input">
+                    <label for="audioFile">Select Audio File:</label>
+                    <input type="file" id="audioFile" accept="audio/*" />
+                </div>
+            </div>
+            
+            <div class="controls">
+                <div class="volume-controls">
+                    <div class="volume-control">
+                        <label for="videoVolume">Video Volume:</label>
+                        <input type="range" id="videoVolume" min="0" max="100" value="100">
+                        <span id="videoVolumeValue">100%</span>
+                    </div>
+                    <div class="volume-control">
+                        <label for="audioVolume">Audio Volume:</label>
+                        <input type="range" id="audioVolume" min="0" max="100" value="100">
+                        <span id="audioVolumeValue">100%</span>
+                    </div>
+                </div>
+                <button id="mergeBtn">Merge Files</button>
+            </div>
+            
+            <div class="preview-container">
+                <video id="previewVideo" controls></video>
+            </div>
+            
+            <div class="progress-bar" id="progressBar">
+                <div class="progress" id="progress"></div>
+            </div>
+        </div>
+    </div>
+    <script src="../js/audio-merger.js"></script>
+</body>
+</html>

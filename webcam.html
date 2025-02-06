@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            overflow: hidden;
+            border-radius: 12px;
+            user-select: none;
+        }
+
+        .webcam-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        #webcamVideo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .title-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 24px;
+            background: rgba(0, 0, 0, 0.5);
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            padding: 0 8px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            -webkit-app-region: drag; /* Make title bar draggable */
+        }
+
+        .webcam-container:hover .title-bar {
+            opacity: 1;
+        }
+
+        .title-bar button {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 4px;
+            margin-left: 8px;
+            font-size: 14px;
+            line-height: 1;
+            -webkit-app-region: no-drag; /* Prevent buttons from interfering with drag */
+        }
+
+        .title-bar button:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        /* Resize handles */
+        .resize-handle {
+            position: absolute;
+            background: transparent;
+            z-index: 1000;
+        }
+
+        .resize-handle.top-left {
+            top: 0;
+            left: 0;
+            width: 10px;
+            height: 10px;
+            cursor: nw-resize;
+            -webkit-app-region: no-drag;
+        }
+
+        .resize-handle.top-right {
+            top: 0;
+            right: 0;
+            width: 10px;
+            height: 10px;
+            cursor: ne-resize;
+            -webkit-app-region: no-drag;
+        }
+
+        .resize-handle.bottom-left {
+            bottom: 0;
+            left: 0;
+            width: 10px;
+            height: 10px;
+            cursor: sw-resize;
+            -webkit-app-region: no-drag;
+        }
+
+        .resize-handle.bottom-right {
+            bottom: 0;
+            right: 0;
+            width: 10px;
+            height: 10px;
+            cursor: se-resize;
+            -webkit-app-region: no-drag;
+        }
+
+        /* Add side handles for more resize points */
+        .resize-handle.left {
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 10px;
+            height: 20px;
+            cursor: w-resize;
+            -webkit-app-region: no-drag;
+        }
+
+        .resize-handle.right {
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 10px;
+            height: 20px;
+            cursor: e-resize;
+            -webkit-app-region: no-drag;
+        }
+
+        .resize-handle.top {
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 10px;
+            cursor: n-resize;
+            -webkit-app-region: no-drag;
+        }
+
+        .resize-handle.bottom {
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 10px;
+            cursor: s-resize;
+            -webkit-app-region: no-drag;
+        }
+    </style>
+</head>
+<body>
+    <div class="webcam-container">
+        <div class="title-bar">
+            <button id="minimizeBtn">─</button>
+            <button id="closeBtn">×</button>
+        </div>
+        <video id="webcamVideo" autoplay playsinline></video>
+        <!-- Corner resize handles -->
+        <div class="resize-handle top-left"></div>
+        <div class="resize-handle top-right"></div>
+        <div class="resize-handle bottom-left"></div>
+        <div class="resize-handle bottom-right"></div>
+        <!-- Side resize handles -->
+        <div class="resize-handle left"></div>
+        <div class="resize-handle right"></div>
+        <div class="resize-handle top"></div>
+        <div class="resize-handle bottom"></div>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+        const video = document.getElementById('webcamVideo');
+        const minimizeBtn = document.getElementById('minimizeBtn');
+        const closeBtn = document.getElementById('closeBtn');
+        let isResizing = false;
+        let currentHandle = null;
+
+        async function initializeWebcam() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: true,
+                    audio: false
+                });
+                video.srcObject = stream;
+
+                // Clean up on window close
+                window.onbeforeunload = () => {
+                    stream.getTracks().forEach(track => track.stop());
+                };
+            } catch (err) {
+                console.error('Error accessing webcam:', err);
+            }
+        }
+
+        // Initialize resize handlers
+        document.querySelectorAll('.resize-handle').forEach(handle => {
+            handle.addEventListener('mousedown', (e) => {
+                isResizing = true;
+                currentHandle = e.target.classList[1];
+                e.preventDefault();
+            });
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+
+            const win = require('electron').remote.getCurrentWindow();
+            const bounds = win.getBounds();
+            let newWidth = bounds.width;
+            let newHeight = bounds.height;
+            let newX = bounds.x;
+            let newY = bounds.y;
+
+            // Calculate new dimensions based on resize handle
+            switch (currentHandle) {
+                case 'top-left':
+                    newWidth = bounds.width + (bounds.x - e.screenX);
+                    newHeight = bounds.height + (bounds.y - e.screenY);
+                    newX = e.screenX;
+                    newY = e.screenY;
+                    break;
+                case 'top-right':
+                    newWidth = e.screenX - bounds.x;
+                    newHeight = bounds.height + (bounds.y - e.screenY);
+                    newY = e.screenY;
+                    break;
+                case 'bottom-left':
+                    newWidth = bounds.width + (bounds.x - e.screenX);
+                    newHeight = e.screenY - bounds.y;
+                    newX = e.screenX;
+                    break;
+                case 'bottom-right':
+                    newWidth = e.screenX - bounds.x;
+                    newHeight = e.screenY - bounds.y;
+                    break;
+                case 'left':
+                    newWidth = bounds.width + (bounds.x - e.screenX);
+                    newX = e.screenX;
+                    break;
+                case 'right':
+                    newWidth = e.screenX - bounds.x;
+                    break;
+                case 'top':
+                    newHeight = bounds.height + (bounds.y - e.screenY);
+                    newY = e.screenY;
+                    break;
+                case 'bottom':
+                    newHeight = e.screenY - bounds.y;
+                    break;
+            }
+
+            // Apply minimum dimensions
+            newWidth = Math.max(200, newWidth);
+            newHeight = Math.max(150, newHeight);
+
+            // Update window bounds
+            win.setBounds({
+                x: newX,
+                y: newY,
+                width: newWidth,
+                height: newHeight
+            });
+        });
+
+        document.addEventListener('mouseup', () => {
+            isResizing = false;
+            currentHandle = null;
+        });
+
+        // Button handlers
+        minimizeBtn.addEventListener('click', () => {
+            require('electron').remote.getCurrentWindow().minimize();
+        });
+
+        closeBtn.addEventListener('click', () => {
+            ipcRenderer.send('stop-recording');
+        });
+
+        initializeWebcam();
+    </script>
+</body>
+</html>
