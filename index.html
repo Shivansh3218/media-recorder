@@ -1,78 +1,122 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Video Editor Suite</title>
-    <link rel="stylesheet" href="./css/styles.css">
-</head><style>
+    <link rel="stylesheet" href="./css/styles.css" /></head
+  ><style>
     body {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        min-height: 100vh;
-        margin: 0;
-        background-color: #f5f5f5;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      background-color: #f5f5f5;
     }
     .main-container {
-        flex-grow: 1;
-        width: 100%;
-        text-align: center;
+      flex-grow: 1;
+      width: 100%;
+      text-align: center;
     }
     footer {
+      text-align: center;
+      padding: 15px;
+      background-color: #333;
+      color: white;
+      width: 100%;
+    }
+  </style>
+
+  <body>
+    <div class="main-container">
+      <header>
+        <h1>Video Editor Suite</h1>
+        <p>Your all-in-one solution for video editing needs</p>
+      </header>
+
+      <div class="cards-container">
+        <div
+          class="feature-card"
+          onclick="window.location.href='./pages/screen-recorder.html'"
+        >
+          <div class="card-image">
+            <img src="./assets/record.avif" alt="Screen Recording" />
+          </div>
+          <div class="card-content">
+            <h2>Screen & Webcam Recording</h2>
+            <p>Record your screen with webcam overlay and audio capture</p>
+          </div>
+        </div>
+
+        <div
+          class="feature-card"
+          onclick="window.location.href='./pages/audio-extractor.html'"
+        >
+          <div class="card-image">
+            <img src="./assets/extract.avif" alt="Audio Extraction" />
+          </div>
+          <div class="card-content">
+            <h2>Audio Extraction</h2>
+            <p>Extract audio from any video file with ease</p>
+          </div>
+        </div>
+
+        <div
+          class="feature-card"
+          onclick="window.location.href='./pages/audio-merger.html'"
+        >
+          <div class="card-image">
+            <img src="./assets/merge.avif" alt="Audio Merger" />
+          </div>
+          <div class="card-content">
+            <h2>Audio Merger</h2>
+            <p>Merge audio tracks with your videos</p>
+          </div>
+        </div>
+      </div>
+      <div
+        class="feature-card"
+        onclick="window.location.href='./pages/video-converter.html'"
+      >
+        <div class="card-image">
+          <img src="./assets/convert.avif" alt="Video Converter" />
+        </div>
+        <div class="card-content">
+          <h2>Video Converter</h2>
+          <p>Convert videos between different formats (WebM, MP4, etc.)</p>
+        </div>
+      </div>
+    </div>
+
+    <footer
+      style="
         text-align: center;
         padding: 15px;
         background-color: #333;
         color: white;
-        width: 100%;
-    }
-</style>
-
-<body>
-    <div class="main-container">
-        <header>
-            <h1>Video Editor Suite</h1>
-            <p>Your all-in-one solution for video editing needs</p>
-        </header>
-
-        <div class="cards-container">
-            <div class="feature-card" onclick="window.location.href='./pages/screen-recorder.html'">
-                <div class="card-image">
-                    <img src="./assets/record.avif" alt="Screen Recording">
-                </div>
-                <div class="card-content">
-                    <h2>Screen & Webcam Recording</h2>
-                    <p>Record your screen with webcam overlay and audio capture</p>
-                </div>
-            </div>
-
-            <div class="feature-card" onclick="window.location.href='./pages/audio-extractor.html'">
-                <div class="card-image">
-                    <img src="./assets/extract.avif" alt="Audio Extraction">
-                </div>
-                <div class="card-content">
-                    <h2>Audio Extraction</h2>
-                    <p>Extract audio from any video file with ease</p>
-                </div>
-            </div>
-
-            <div class="feature-card" onclick="window.location.href='./pages/audio-merger.html'">
-                <div class="card-image">
-                    <img src="./assets/merge.avif" alt="Audio Merger">
-                </div>
-                <div class="card-content">
-                    <h2>Audio Merger</h2>
-                    <p>Merge audio tracks with your videos</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <footer style="text-align: center; padding: 15px; background-color: #333; color: white; margin-top: 20px; ">
-        <p>&copy; 2024 Developed by Shivansh Rawat</p>
-        <p>Email: <a href="mailto:shivanshrawat587@gmail.com" style="color: #f8c471; text-decoration: none;">shivanshrawat587@gmail.com</a></p>
-        <p>GitHub: <a href="https://github.com/Shivansh3218" target="_blank" style="color: #f8c471; text-decoration: none;">Shivansh3218</a></p>
+        margin-top: 20px;
+      "
+    >
+      <p>&copy; 2024 Developed by Shivansh Rawat</p>
+      <p>
+        Email:
+        <a
+          href="mailto:shivanshrawat587@gmail.com"
+          style="color: #f8c471; text-decoration: none"
+          >shivanshrawat587@gmail.com</a
+        >
+      </p>
+      <p>
+        GitHub:
+        <a
+          href="https://github.com/Shivansh3218"
+          target="_blank"
+          style="color: #f8c471; text-decoration: none"
+          >Shivansh3218</a
+        >
+      </p>
     </footer>
-</body>
+  </body>
 </html>

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Converter - Video Editor Suite</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="../css/video-converter.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button onclick="window.location.href='../index.html'" class="back-btn">
+                <i data-lucide="arrow-left"></i>
+                Back to Home
+            </button>
+            <h1>Video Format Converter</h1>
+        </div>
+
+        <div class="converter-section">
+            <div class="input-section">
+                <div class="drop-zone" id="dropZone">
+                    <i data-lucide="upload-cloud" class="upload-icon"></i>
+                    <p>Drag & drop video file here or</p>
+                    <button class="select-btn" onclick="document.getElementById('fileInput').click()">
+                        <i data-lucide="folder"></i>
+                        Select Video
+                    </button>
+                    <input type="file" id="fileInput" accept="video/*" style="display: none">
+                </div>
+                <div id="fileInfo" class="file-info" style="display: none;">
+                    <div class="file-details">
+                        <i data-lucide="file-video" class="file-icon"></i>
+                        <div class="file-text">
+                            <p class="file-name" id="fileName">No file selected</p>
+                            <p class="file-size" id="fileSize"></p>
+                        </div>
+                        <button class="remove-btn" id="removeFile">
+                            <i data-lucide="x"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="conversion-settings">
+                <div class="setting-group">
+                    <label>Output Format</label>
+                    <select id="outputFormat" class="format-select">
+                        <option value="mp4">MP4</option>
+                        <option value="webm">WebM</option>
+                        <option value="mov">MOV</option>
+                        <option value="mkv">MKV</option>
+                        <option value="avi">AVI</option>
+                    </select>
+                </div>
+
+                <div class="setting-group">
+                    <label>Quality Preset</label>
+                    <select id="qualityPreset" class="quality-select">
+                        <option value="high">High Quality</option>
+                        <option value="medium">Medium Quality</option>
+                        <option value="low">Low Quality</option>
+                    </select>
+                </div>
+
+                <button id="convertBtn" class="convert-btn" disabled>
+                    <i data-lucide="refresh-cw"></i>
+                    Convert Video
+                </button>
+            </div>
+
+            <div class="progress-container" style="display: none;">
+                <div class="progress-info">
+                    <span class="progress-status">Converting...</span>
+                    <span class="progress-percentage" id="progressPercent">0%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress" id="progressBar"></div>
+                </div>
+                <button id="cancelBtn" class="cancel-btn">
+                    <i data-lucide="x"></i>
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/video-converter.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

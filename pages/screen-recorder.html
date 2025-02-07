@@ -22,24 +22,33 @@
         <h1>Screen & Webcam Recorder</h1>
     </div>
     
-    <div class="controls">
-        <button id="startBtn" class="control-btn primary-btn">
-            <i data-lucide="video"></i>
-            Start Recording
-        </button>
-        <button id="pauseBtn" class="control-btn secondary-btn" disabled>
-            <i data-lucide="pause"></i>
-            Pause Recording
-        </button>
-        <button id="switchSourceBtn" class="control-btn secondary-btn" disabled>
-            <i data-lucide="monitor"></i>
-            Switch Screen
-        </button>
-        <button id="stopBtn" class="control-btn danger-btn" disabled>
-            <i data-lucide="square"></i>
-            Stop Recording
-        </button>
-    </div>
+   <div class="controls">
+    <button id="startBtn" class="control-btn primary-btn">
+        <i data-lucide="video"></i>
+        Start Recording
+    </button>
+    <button id="pauseBtn" class="control-btn secondary-btn" disabled>
+        <i data-lucide="pause"></i>
+        Pause Recording
+    </button>
+    <button id="switchSourceBtn" class="control-btn secondary-btn" disabled>
+        <i data-lucide="monitor"></i>
+        Switch Screen
+    </button>
+    <button id="stopBtn" class="control-btn danger-btn" disabled>
+        <i data-lucide="square"></i>
+        Stop Recording
+    </button>
+    <!-- New buttons -->
+    <button id="toggleCameraBtn" class="control-btn secondary-btn">
+        <i data-lucide="camera"></i>
+        Enable Camera
+    </button>
+    <button id="toggleMicBtn" class="control-btn secondary-btn">
+        <i data-lucide="mic"></i>
+        Enable Mic
+    </button>
+</div>
     
     <div class="preview-container">
         <video id="screenPreview" autoplay></video>

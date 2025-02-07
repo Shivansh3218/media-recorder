@@ -1,11 +1,15 @@
 const { ipcRenderer } = require('electron');
 
+// Get DOM elements
 const startBtn = document.getElementById('startBtn');
 const stopBtn = document.getElementById('stopBtn');
 const pauseBtn = document.getElementById('pauseBtn');
 const switchBtn = document.getElementById('switchSourceBtn');
+const toggleCameraBtn = document.getElementById('toggleCameraBtn');
+const toggleMicBtn = document.getElementById('toggleMicBtn');
 const screenPreview = document.getElementById('screenPreview');
 
+// State variables
 let mediaRecorder;
 let recordedChunks = [];
 let audioContext;
@@ -13,7 +17,60 @@ let audioDestination;
 let currentScreenStream;
 let currentWebcamStream;
 let isPaused = false;
+let isCameraEnabled = false;
+let isMicEnabled = false;
+let micGain;
 
+// Camera and Mic Toggle Functions
+function toggleCamera() {
+    isCameraEnabled = !isCameraEnabled;
+    toggleCameraBtn.innerHTML = `
+        <i data-lucide="camera"></i>
+        ${isCameraEnabled ? 'Disable Camera' : 'Enable Camera'}
+    `;
+    toggleCameraBtn.classList.toggle('primary-btn');
+    toggleCameraBtn.classList.toggle('secondary-btn');
+    
+    // Update lucide icons
+    lucide.createIcons();
+
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        // If recording is active, update the webcam window visibility
+        if (isCameraEnabled) {
+            setupWebcamStream().then(() => {
+                ipcRenderer.send('start-recording');
+                updateAudioMixing();
+            });
+        } else {
+            if (currentWebcamStream) {
+                currentWebcamStream.getTracks().forEach(track => track.stop());
+                currentWebcamStream = null;
+            }
+            ipcRenderer.send('stop-recording');
+            updateAudioMixing();
+        }
+    }
+}
+
+function toggleMic() {
+    isMicEnabled = !isMicEnabled;
+    toggleMicBtn.innerHTML = `
+        <i data-lucide="mic"></i>
+        ${isMicEnabled ? 'Disable Mic' : 'Enable Mic'}
+    `;
+    toggleMicBtn.classList.toggle('primary-btn');
+    toggleMicBtn.classList.toggle('secondary-btn');
+    
+    // Update lucide icons
+    lucide.createIcons();
+
+    // Update mic gain if audio context exists
+    if (micGain) {
+        micGain.gain.value = isMicEnabled ? 1.0 : 0.0;
+    }
+}
+
+// Recording Control Functions
 async function startRecording() {
     try {
         const sources = await ipcRenderer.invoke('get-sources');
@@ -65,6 +122,25 @@ function setupDialogListeners(dialog) {
             await initializeRecording(selectedSource);
         }
     };
+}
+
+async function setupWebcamStream() {
+    if (isCameraEnabled && !currentWebcamStream) {
+        try {
+            currentWebcamStream = await navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: false
+                }
+            });
+        } catch (err) {
+            console.error('Error accessing webcam:', err);
+            isCameraEnabled = false;
+            toggleCameraBtn.click(); // Reset button state
+        }
+    }
 }
 
 async function switchSource(sourceId) {
@@ -159,18 +235,13 @@ async function initializeRecording(sourceId) {
             }
         });
 
-        // Get webcam stream
-        currentWebcamStream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: {
-                echoCancellation: true,
-                noiseSuppression: true,
-                autoGainControl: false
+        // Setup webcam if enabled
+        if (isCameraEnabled) {
+            await setupWebcamStream();
+            if (currentWebcamStream) {
+                ipcRenderer.send('start-recording');
             }
-        });
-
-        // Show floating webcam window
-        ipcRenderer.send('start-recording');
+        }
 
         // Set up screen preview
         screenPreview.srcObject = currentScreenStream;
@@ -198,16 +269,18 @@ function setupAudioMixing() {
     audioContext = new AudioContext();
     audioDestination = audioContext.createMediaStreamDestination();
 
-    const micSource = audioContext.createMediaStreamSource(currentWebcamStream);
+    // Setup microphone audio if webcam stream exists
+    if (currentWebcamStream) {
+        const micSource = audioContext.createMediaStreamSource(currentWebcamStream);
+        micGain = audioContext.createGain();
+        micGain.gain.value = isMicEnabled ? 1.0 : 0.0;
+        micSource.connect(micGain).connect(audioDestination);
+    }
+
+    // Setup system audio
     const sysSource = audioContext.createMediaStreamSource(currentScreenStream);
-
-    const micGain = audioContext.createGain();
     const sysGain = audioContext.createGain();
-
-    micGain.gain.value = 1.0;
     sysGain.gain.value = 0.5;
-
-    micSource.connect(micGain).connect(audioDestination);
     sysSource.connect(sysGain).connect(audioDestination);
 }
 
@@ -244,15 +317,23 @@ function pauseRecording() {
     if (mediaRecorder && mediaRecorder.state === 'recording') {
         mediaRecorder.pause();
         isPaused = true;
-        pauseBtn.textContent = 'Resume Recording';
+        pauseBtn.innerHTML = `
+            <i data-lucide="play"></i>
+            Resume Recording
+        `;
         pauseBtn.classList.remove('secondary-btn');
         pauseBtn.classList.add('primary-btn');
+        lucide.createIcons();
     } else if (mediaRecorder && mediaRecorder.state === 'paused') {
         mediaRecorder.resume();
         isPaused = false;
-        pauseBtn.textContent = 'Pause Recording';
+        pauseBtn.innerHTML = `
+            <i data-lucide="pause"></i>
+            Pause Recording
+        `;
         pauseBtn.classList.remove('primary-btn');
         pauseBtn.classList.add('secondary-btn');
+        lucide.createIcons();
     }
 }
 
@@ -310,7 +391,9 @@ function saveVideo() {
 startBtn.addEventListener('click', startRecording);
 stopBtn.addEventListener('click', stopRecording);
 pauseBtn.addEventListener('click', pauseRecording);
-switchBtn.addEventListener('click', startRecording); // This now handles switching properly
+switchBtn.addEventListener('click', startRecording);
+toggleCameraBtn.addEventListener('click', toggleCamera);
+toggleMicBtn.addEventListener('click', toggleMic);
 
 // Handle page unload
 window.addEventListener('beforeunload', () => {
